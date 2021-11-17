@@ -1,4 +1,4 @@
-from flask import Flask, render_template, g
+from flask import Flask, render_template, g, request
 import sqlite3
 
 
@@ -8,7 +8,7 @@ app = Flask(__name__)
 
 def connect_db():
     """Connect and return database"""
-    sql = sqlite3('/Users/alpha/Dev/Flask/FoodTrack/food_log.db')
+    sql = sqlite3.connect('/Users/alpha/Dev/Flask/FoodTrack/food_log.db')
     # This will change the returns to dictionaries (default is tuple)
     sql.row_factory = sqlite3.Row
 
@@ -42,9 +42,27 @@ def view():
     return render_template('day.html')
 
 
-@app.route('/food')
+@app.route('/food', methods=['GET', 'POST'])
 def food():
-    return render_template('add_food.html')
+    db = get_db()
+
+    if request.method == 'POST':
+        name = request.form['food-name']
+        protein = int(request.form['protein'])
+        carbohydrates = int(request.form['carbohydrates'])
+        fat = int(request.form['fat'])
+
+        calories = protein * 4 + carbohydrates * 4 + fat * 9
+
+        db.execute('insert into food (name, protin, carbohydrates, fat, calories) values (?, ?, ?, ?, ?)',
+                   [name, protein, carbohydrates, fat, calories])
+        db.commit()
+
+    cur = db.execute(
+        'select name, protin, carbohydrates, fat, calories from food')
+    results = cur.fetchall()
+
+    return render_template('add_food.html', results=results)
 
 
 if __name__ == '__main__':
